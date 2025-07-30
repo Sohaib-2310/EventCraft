@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,61 +17,140 @@ const Profile = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const [name, setName] = useState('John Doe');
-  const [email, setEmail] = useState('john@example.com');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
 
+  const token = localStorage.getItem('token');
+
+  // Fetch user data
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/user/profile', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          setName(data.name);
+          setEmail(data.email);
+        } else {
+          toast.error(data.message || 'Failed to fetch profile');
+        }
+      } catch (error) {
+        toast.error('Error loading profile.');
+      }
+    };
+
+    if (token) {
+      fetchProfile();
+    } else {
+      navigate('/auth');
+    }
+  }, [token, navigate]);
+
+  // Update profile
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success("Your profile has been updated successfully.");
+      const res = await fetch('http://localhost:5000/api/user/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name, email }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        toast.success('Your profile has been updated successfully.');
+      } else {
+        toast.error(data.message || 'Failed to update profile.');
+      }
     } catch (error) {
-      toast.error("Failed to update profile. Please try again.");
+      toast.error('Error updating profile.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Update password
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
 
     if (newPassword !== confirmNewPassword) {
-      toast.error("Please make sure your new passwords match.");
+      toast.error('Password mismatch. Please make sure your passwords match.');
       return;
     }
 
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success("Your password has been updated successfully.");
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmNewPassword('');
+      const res = await fetch('http://localhost:5000/api/user/profile/update-password', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        toast.success('Your password has been updated successfully.');
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmNewPassword('');
+      } else {
+        toast.error(data.message || 'Failed to update password.');
+      }
     } catch (error) {
-      toast.error("Failed to update password. Please check your current password.");
+      toast.error('Error updating password.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Delete profile
   const handleDeleteProfile = async () => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success("Your account has been successfully deleted.");
-      navigate('/');
+      const res = await fetch('http://localhost:5000/api/user/profile', {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        toast.success('Your account has been successfully deleted.');
+        localStorage.removeItem('token');
+        navigate('/');
+        window.location.reload();
+      } else {
+        toast.error(data.message || 'Failed to delete account.');
+      }
     } catch (error) {
-      toast.error("Failed to delete account. Please try again.");
+      toast.error('Error deleting account.');
     }
   };
 
+  // Logout
   const handleLogout = () => {
-    toast.success("You have been successfully logged out.");
+    localStorage.removeItem('token');
+    toast.success('You have been successfully logged out.');
     navigate('/');
+    window.location.reload();
   };
 
   return (
@@ -95,6 +174,7 @@ const Profile = () => {
                 <TabsTrigger value="security">Security</TabsTrigger>
               </TabsList>
 
+              {/* Profile Tab */}
               <TabsContent value="profile">
                 <form onSubmit={handleUpdateProfile} className="space-y-4">
                   <div className="space-y-2">
@@ -108,19 +188,30 @@ const Profile = () => {
                   </div>
 
                   <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Updating..." : "Update Profile"}
+                    {isLoading ? 'Updating...' : 'Update Profile'}
                   </Button>
                 </form>
               </TabsContent>
 
+              {/* Security Tab */}
               <TabsContent value="security">
                 <div className="space-y-6">
                   <form onSubmit={handleUpdatePassword} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="current-password">Current Password</Label>
                       <div className="relative">
-                        <Input id="current-password" type={showCurrentPassword ? "text" : "password"} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
-                        <button type="button" className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowCurrentPassword(!showCurrentPassword)}>
+                        <Input
+                          id="current-password"
+                          type={showCurrentPassword ? 'text' : 'password'}
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          required
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                        >
                           {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
@@ -129,8 +220,18 @@ const Profile = () => {
                     <div className="space-y-2">
                       <Label htmlFor="new-password">New Password</Label>
                       <div className="relative">
-                        <Input id="new-password" type={showNewPassword ? "text" : "password"} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
-                        <button type="button" className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowNewPassword(!showNewPassword)}>
+                        <Input
+                          id="new-password"
+                          type={showNewPassword ? 'text' : 'password'}
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          required
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                        >
                           {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
@@ -139,15 +240,25 @@ const Profile = () => {
                     <div className="space-y-2">
                       <Label htmlFor="confirm-new-password">Confirm New Password</Label>
                       <div className="relative">
-                        <Input id="confirm-new-password" type={showConfirmPassword ? "text" : "password"} value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} required />
-                        <button type="button" className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                        <Input
+                          id="confirm-new-password"
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          value={confirmNewPassword}
+                          onChange={(e) => setConfirmNewPassword(e.target.value)}
+                          required
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        >
                           {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
                     </div>
 
                     <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? "Updating..." : "Update Password"}
+                      {isLoading ? 'Updating...' : 'Update Password'}
                     </Button>
                   </form>
 
@@ -165,7 +276,9 @@ const Profile = () => {
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                          <AlertDialogDescription>This action cannot be undone. This will permanently delete your account and remove your data from our servers.</AlertDialogDescription>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete your account and remove your data from our servers.
+                          </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>

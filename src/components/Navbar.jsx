@@ -1,10 +1,29 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Menu, X, User } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const navigate = useNavigate();
+
+  // Check token on load and when it changes
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('token');
+      setIsAuthenticated(!!token);
+    };
+
+    checkAuth();
+
+    // Listen for login/logout changes from other components
+    window.addEventListener('storage', checkAuth);
+
+    return () => {
+      window.removeEventListener('storage', checkAuth);
+    };
+  }, []);
 
   const scrollToSection = (sectionId) => {
     const element = document.getElementById(sectionId);
@@ -20,7 +39,7 @@ const Navbar = () => {
     { label: 'Packages', action: () => scrollToSection('deals') },
     { label: 'Gallery', action: () => scrollToSection('gallery') },
     { label: 'Availability', action: () => scrollToSection('availability') },
-    { label: 'Contact Us', action: () => scrollToSection('contact') }
+    { label: 'Contact Us', action: () => scrollToSection('contact') },
   ];
 
   return (
@@ -29,7 +48,7 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex-shrink-0">
-            <h1 className="text-2xl font-bold">
+            <h1 className="text-2xl font-bold cursor-pointer" onClick={() => navigate('/')}>
               Event
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">
                 Craft
@@ -49,11 +68,20 @@ const Navbar = () => {
                   {item.label}
                 </button>
               ))}
-              <Link to="/auth">
-                <Button variant="outline" size="sm">
-                  Login
-                </Button>
-              </Link>
+
+              {isAuthenticated ? (
+                <Link to="/profile">
+                  <Button variant="outline" size="sm">
+                    <User className="w-4 h-4 mr-1" /> Profile
+                  </Button>
+                </Link>
+              ) : (
+                <Link to="/auth">
+                  <Button variant="outline" size="sm">
+                    Login
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
 
@@ -81,12 +109,21 @@ const Navbar = () => {
                   {item.label}
                 </button>
               ))}
+
               <div className="pt-2">
-                <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
-                  <Button variant="outline" size="sm" className="w-full">
-                    Login
-                  </Button>
-                </Link>
+                {isAuthenticated ? (
+                  <Link to="/profile" onClick={() => setIsMenuOpen(false)}>
+                    <Button variant="outline" size="sm" className="w-full">
+                      <User className="w-4 h-4 mr-1" /> Profile
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
+                    <Button variant="outline" size="sm" className="w-full">
+                      Login
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
           </div>

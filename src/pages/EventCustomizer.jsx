@@ -162,41 +162,68 @@ const EventCustomizer = ({ onBack }) => {
         setShowBookingForm(true);
     };
 
-    const submitBooking = () => {
-        const serviceID = 'service_dbk69bn';
-        const templateID = 'template_mp3mw5n';
-        const userID = 'dNiRqW19iEm3Wxm7k'; // public key from EmailJS
-
-        const templateParams = {
+    const submitBooking = async () => {
+        const bookingPayload = {
             name: bookingData.name,
             email: bookingData.email,
             phone: bookingData.phone,
-            event_type: bookingData.eventType || 'Event Booking',
-            message: bookingData.specialRequests || 'No special requests provided.',
-            event_date: selectedDate ? format(selectedDate, 'PPP') : 'Not selected',
-            guest_count: guestCount,
-            budget: `PKR ${totalBudget.toLocaleString()}`,
-            negotiated: hasNegotiated ? 'Yes' : 'No',
-
-            services: Object.entries(selectedServices)
-                .map(([category, services]) => {
-                    return `${serviceCategories[category].name}:\n` + services.map(s =>
-                        ` - ${s.name} (PKR ${s.perPerson ? s.price * guestCount : s.price})`).join('\n');
-                }).join('\n\n')
+            eventType: bookingData.eventType || 'Event Booking',
+            specialRequests: bookingData.specialRequests || 'No special requests provided.',
+            eventDate: selectedDate,
+            guestCount,
+            budget: totalBudget,
+            hasNegotiated,
+            selectedServices
         };
 
-        emailjs.send(serviceID, templateID, templateParams, userID)
-            .then(() => {
-                toast.success("Booking Confirmed! We'll contact you within 24 hours to finalize your event details.");
-
-                setShowBookingForm(false);
-                onBack();
-            })
-            .catch((error) => {
-                console.error("EmailJS Error:", error);
-                toast.error("Booking Failed! Something went wrong while sending your booking. Please try again.");
+        try {
+            // Send to backend
+            const response = await fetch('http://localhost:5000/api/booking', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(bookingPayload),
             });
+
+            const data = await response.json();
+
+            if (!data.success) throw new Error("Failed to store booking");
+
+            // Send email with EmailJS
+            // const serviceID = 'service_dbk69bn';
+            // const templateID = 'template_mp3mw5n';
+            // const userID = 'dNiRqW19iEm3Wxm7k'; // public key from EmailJS
+
+            // const templateParams = {
+            //     name: bookingData.name,
+            //     email: bookingData.email,
+            //     phone: bookingData.phone,
+            //     event_type: bookingData.eventType || 'Event Booking',
+            //     message: bookingData.specialRequests || 'No special requests provided.',
+            //     event_date: selectedDate ? format(selectedDate, 'PPP') : 'Not selected',
+            //     guest_count: guestCount,
+            //     budget: `PKR ${totalBudget.toLocaleString()}`,
+            //     negotiated: hasNegotiated ? 'Yes' : 'No',
+            //     services: Object.entries(selectedServices)
+            //         .map(([category, services]) => {
+            //             return `${serviceCategories[category].name}:\n` +
+            //                 services.map(s => ` - ${s.name} (PKR ${s.perPerson ? s.price * guestCount : s.price})`).join('\n');
+            //         }).join('\n\n')
+            // };
+
+            // await emailjs.send(serviceID, templateID, templateParams, userID);
+
+            toast.success("Booking Confirmed! We'll contact you within 24 hours to finalize your event details.");
+            setShowBookingForm(false);
+            onBack();
+
+        } catch (error) {
+            console.error("Submission error:", error);
+            toast.error("Booking Failed! Please try again.");
+        }
     };
+
 
 
     return (

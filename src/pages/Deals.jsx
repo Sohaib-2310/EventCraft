@@ -83,47 +83,52 @@ const Deals = () => {
     setShowBookingForm(true);
   };
 
-  const submitBooking = () => {
-    const serviceID = 'service_dbk69bn';
-    const templateID = 'template_mp3mw5n';
-    const userID = 'dNiRqW19iEm3Wxm7k'; // public key from EmailJS
+  const submitBooking = async () => {
+    // const serviceID = 'service_dbk69bn';
+    // const templateID = 'template_mp3mw5n';
+    // const userID = 'dNiRqW19iEm3Wxm7k'; // public key from EmailJS
 
     const selectedPkg = packages.find(pkg => pkg.id === selectedPackage);
 
-    const templateParams = {
-      services: selectedPkg?.name, // package_name
-      budget: `PKR ${selectedPkg?.price.toLocaleString()}`, // package_price
+    const payload = {
       name: bookingData.name,
       email: bookingData.email,
       phone: bookingData.phone,
-      event_type: bookingData.eventType,
-      event_date: bookingData.eventDate,
-      guest_count: bookingData.guestCount,
-      message: bookingData.specialRequests || 'No special requests provided.'
+      eventType: bookingData.eventType,
+      eventDate: bookingData.eventDate,
+      guestCount: bookingData.guestCount,
+      specialRequests: bookingData.specialRequests || 'No special requests provided.',
+      packageName: selectedPkg?.name,
+      packagePrice: `PKR ${selectedPkg?.price.toLocaleString()}`
     };
 
-    emailjs.send(serviceID, templateID, templateParams, userID)
-      .then(() => {
-        toast.success(`Your ${selectedPkg?.name} has been booked. We'll contact you within 24 hours.`, {
-          duration: 5000
-        });
-        setShowBookingForm(false);
-        setBookingData({
-          name: '',
-          email: '',
-          phone: '',
-          eventType: '',
-          eventDate: '',
-          guestCount: '',
-          specialRequests: ''
-        });
-      })
-      .catch((error) => {
-        console.error('EmailJS error:', error);
-        toast.error('Something went wrong while submitting your booking. Please try again.');
-      });
-  };
+    try {
+      // EmailJS
+      // await emailjs.send(serviceID, templateID, payload, userID);
 
+      // Backend
+      await fetch('http://localhost:5000/api/package-booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      toast.success(`Your ${selectedPkg?.name} has been booked. We'll contact you within 24 hours.`);
+      setShowBookingForm(false);
+      setBookingData({
+        name: '',
+        email: '',
+        phone: '',
+        eventType: '',
+        eventDate: '',
+        guestCount: '',
+        specialRequests: ''
+      });
+    } catch (error) {
+      console.error('Submit error:', error);
+      toast.error('Something went wrong. Please try again.');
+    }
+  };
 
   return (
     <section id="deals" className="py-20 px-6 bg-gradient-to-br from-slate-900 to-purple-900">

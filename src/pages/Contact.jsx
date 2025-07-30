@@ -18,54 +18,31 @@ const Contact = () => {
         message: ''
     });
 
-    // const handleSubmit = async (e) => {
-    //     e.preventDefault();
-
-    //     try {
-    //         // Send email via EmailJS
-    //         await emailjs.send(
-    //             'service_dbk69bn',      // serviceID
-    //             'template_n1oo4v6',     // templateID
-    //             formData,
-    //             'dNiRqW19iEm3Wxm7k'     // public key from EmailJS
-    //         );
-
-    //         // Send data to backend API
-    //         const response = await fetch('http://localhost:5000/api/contact', {
-    //             method: 'POST',
-    //             headers: {
-    //                 'Content-Type': 'application/json',
-    //             },
-    //             body: JSON.stringify(formData),
-    //         });
-
-    //         const data = await response.json();
-
-    //         if (!data.success) throw new Error('Failed to store message');
-
-    //         toast.success("Message Sent Successfully!");
-    //         setFormData({
-    //             name: '',
-    //             email: '',
-    //             phone: '',
-    //             subject: '',
-    //             message: ''
-    //         });
-    //     } catch (error) {
-    //         console.error("Submission error:", error);
-    //         toast.error("Failed to send message. Please try again.");
-    //     }
-    // };
-
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
-        emailjs.send(
-            'service_dbk69bn',      // serviceID
-            'template_n1oo4v6',     // templateID
-            formData,
-            'dNiRqW19iEm3Wxm7k'     // public key from EmailJS
-        ).then(() => {
+        try {
+            // Send email via EmailJS
+            // await emailjs.send(
+            //     'service_dbk69bn',      // serviceID
+            //     'template_n1oo4v6',     // templateID
+            //     formData,
+            //     'dNiRqW19iEm3Wxm7k'     // public key from EmailJS
+            // );
+
+            // Send data to backend API
+            const response = await fetch('http://localhost:5000/api/contact', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            const data = await response.json();
+
+            if (!data.success) throw new Error('Failed to store message');
+
             toast.success("Message Sent Successfully!");
             setFormData({
                 name: '',
@@ -74,12 +51,11 @@ const Contact = () => {
                 subject: '',
                 message: ''
             });
-        }).catch((error) => {
-            console.error("Email send error:", error);
+        } catch (error) {
+            console.error("Submission error:", error);
             toast.error("Failed to send message. Please try again.");
-        });
+        }
     };
-
 
     const contactInfo = [
         {

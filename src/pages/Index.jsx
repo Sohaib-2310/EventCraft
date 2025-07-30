@@ -7,6 +7,7 @@ import Availability from './Availability';
 import Contact from './Contact';
 import Footer from '../components/Footer';
 import Navbar from '@/components/Navbar';
+import Dashboard from './Dashboard';
 
 const Index = () => {
   return (
@@ -19,6 +20,7 @@ const Index = () => {
       <Availability />
       <Contact />
       <Footer />
+      {/* <Dashboard /> */}
     </>
   );
 };

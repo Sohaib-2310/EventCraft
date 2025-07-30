@@ -26,13 +26,27 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      console.log('Login attempt:', { email: loginEmail, password: loginPassword });
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const res = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: loginEmail,
+          password: loginPassword,
+        }),
+      });
 
-      toast.success('Login successful! Welcome back.');
-      navigate('/');
+      const data = await res.json();
+
+      if (res.ok) {
+        localStorage.setItem('token', data.token); // Save token for future use
+        toast.success('Login successful! Welcome back.');
+        navigate('/');
+      } else {
+        toast.error(data.message || 'Login failed.');
+      }
     } catch (error) {
-      toast.error('Login failed. Please check your credentials and try again.');
+      console.error(error);
+      toast.error('Login failed. Please try again later.');
     } finally {
       setIsLoading(false);
     }
@@ -40,6 +54,13 @@ const Auth = () => {
 
   const handleSignup = async (e) => {
     e.preventDefault();
+
+    const passwordRegex = /^(?=.*[A-Za-z]).{6,}$/;
+
+    if (!passwordRegex.test(password)) {
+      toast.error('Password must be at least 6 characters long and include at least one letter.');
+      return;
+    }
 
     if (password !== confirmPassword) {
       toast.error('Password mismatch. Please make sure your passwords match.');
@@ -49,12 +70,26 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      console.log('Signup attempt:', { name, email: signupEmail, password });
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const res = await fetch('http://localhost:5000/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          email: signupEmail,
+          password,
+        }),
+      });
 
-      toast.success('Account created successfully! You can now log in.');
-      navigate('/');
+      const data = await res.json();
+
+      if (res.ok) {
+        toast.success('Account created successfully! You can now log in.');
+        navigate('/');
+      } else {
+        toast.error(data.message || 'Signup failed. Please try again.');
+      }
     } catch (error) {
+      console.error(error);
       toast.error('Signup failed. Please try again later.');
     } finally {
       setIsLoading(false);
