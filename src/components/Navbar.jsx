@@ -6,13 +6,30 @@ import { Link, useNavigate } from 'react-router-dom';
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState(null);
   const navigate = useNavigate();
+
+  // Decode JWT to get role
+  const getUserRoleFromToken = (token) => {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.role || null;
+    } catch (error) {
+      return null;
+    }
+  };
 
   // Check token on load and when it changes
   useEffect(() => {
     const checkAuth = () => {
       const token = localStorage.getItem('token');
-      setIsAuthenticated(!!token);
+      if (token) {
+        setIsAuthenticated(true);
+        setUserRole(getUserRoleFromToken(token));
+      } else {
+        setIsAuthenticated(false);
+        setUserRole(null);
+      }
     };
 
     checkAuth();
@@ -70,11 +87,20 @@ const Navbar = () => {
               ))}
 
               {isAuthenticated ? (
-                <Link to="/profile">
-                  <Button variant="outline" size="sm">
-                    <User className="w-4 h-4 mr-1" /> Profile
-                  </Button>
-                </Link>
+                <>
+                  {userRole === 'admin' && (
+                    <Link to="/admin-dashboard">
+                      <Button variant="outline" size="sm" className="mr-2">
+                        Dashboard
+                      </Button>
+                    </Link>
+                  )}
+                  <Link to="/profile">
+                    <Button variant="outline" size="sm">
+                      <User className="w-4 h-4 mr-1" /> Profile
+                    </Button>
+                  </Link>
+                </>
               ) : (
                 <Link to="/auth">
                   <Button variant="outline" size="sm">
@@ -112,11 +138,20 @@ const Navbar = () => {
 
               <div className="pt-2">
                 {isAuthenticated ? (
-                  <Link to="/profile" onClick={() => setIsMenuOpen(false)}>
-                    <Button variant="outline" size="sm" className="w-full">
-                      <User className="w-4 h-4 mr-1" /> Profile
-                    </Button>
-                  </Link>
+                  <>
+                    {userRole === 'admin' && (
+                      <Link to="/admin-dashboard" onClick={() => setIsMenuOpen(false)}>
+                        <Button variant="outline" size="sm" className="w-full mb-2">
+                          Dashboard
+                        </Button>
+                      </Link>
+                    )}
+                    <Link to="/profile" onClick={() => setIsMenuOpen(false)}>
+                      <Button variant="outline" size="sm" className="w-full">
+                        <User className="w-4 h-4 mr-1" /> Profile
+                      </Button>
+                    </Link>
+                  </>
                 ) : (
                   <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
                     <Button variant="outline" size="sm" className="w-full">

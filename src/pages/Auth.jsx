@@ -38,8 +38,12 @@ const Auth = () => {
       const data = await res.json();
 
       if (res.ok) {
-        localStorage.setItem('token', data.token); // Save token for future use
+        localStorage.setItem('token', data.token); // Save token for future
+        localStorage.setItem('role', data.role); // Store role in localStorage
+
         toast.success('Login successful! Welcome back.');
+
+        // Navigate to the Home Page
         navigate('/');
       } else {
         toast.error(data.message || 'Login failed.');

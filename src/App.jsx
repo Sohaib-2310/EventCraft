@@ -5,6 +5,7 @@ import Index from './pages/Index';
 import Auth from './pages/Auth';
 import Profile from './pages/Profile';
 import ForgotPassword from './pages/ForgotPassword';
+import Dashboard from './pages/Dashboard';
 import { Toaster } from 'react-hot-toast';
 
 const App = () => {
@@ -16,6 +17,7 @@ const App = () => {
         <Route path="/auth" element={<Auth />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/admin-dashboard" element={<Dashboard />} /> 
       </Routes>
     </Router>
   );
