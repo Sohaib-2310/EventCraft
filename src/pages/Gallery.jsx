@@ -51,7 +51,7 @@ const Gallery = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {events.map((event, index) => (
             <Card key={index} className="group overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
-              <CardContent className="p-0"> {/* -mt-6 h-54 --> on going */}
+              <CardContent className="p-0">
                 <div className="relative overflow-hidden">
                   <img
                     src={event.image}

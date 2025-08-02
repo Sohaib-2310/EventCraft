@@ -3,23 +3,29 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import EventCustomizer from './EventCustomizer.jsx';
-import {
-  Building,
-  Utensils,
-  Palette,
-  Volume2,
-  Music,
-  Users,
-  Truck,
-  Camera,
-  Shield,
-  Megaphone
-} from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 
 const Services = () => {
   const [showCustomizer, setShowCustomizer] = useState(false);
+  const [services, setServices] = useState([]);
   const customizerRef = useRef(null);
 
+  // Fetch services from backend
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/services");
+        const data = await response.json();
+        setServices(data);
+      } catch (error) {
+        console.error("Error fetching services:", error);
+      }
+    };
+
+    fetchServices();
+  }, []);
+
+  // Scroll to customizer
   useEffect(() => {
     if (showCustomizer && customizerRef.current) {
       const offset = -65;
@@ -27,69 +33,6 @@ const Services = () => {
       window.scrollTo({ top, behavior: 'smooth' });
     }
   }, [showCustomizer]);
-
-  const services = [
-    {
-      icon: Building,
-      title: "Venue Management",
-      description: "Premium venues for every occasion",
-      features: ["Indoor & Outdoor", "Capacity Planning", "Setup Design"]
-    },
-    {
-      icon: Utensils,
-      title: "Catering Services",
-      description: "Exquisite culinary experiences",
-      features: ["Multi-Cuisine", "Dietary Options", "Professional Service"]
-    },
-    {
-      icon: Palette,
-      title: "Decoration & Theming",
-      description: "Transform spaces into magical settings",
-      features: ["Custom Themes", "Floral Arrangements", "Lighting Design"]
-    },
-    {
-      icon: Volume2,
-      title: "Audio/Visual Support",
-      description: "Crystal clear sound and stunning visuals",
-      features: ["Sound Systems", "LED Screens", "Live Streaming"]
-    },
-    {
-      icon: Music,
-      title: "Entertainment",
-      description: "Memorable performances and activities",
-      features: ["Live Music", "DJ Services", "Special Acts"]
-    },
-    {
-      icon: Users,
-      title: "Guest Management",
-      description: "Seamless guest experience management",
-      features: ["Registration", "Coordination", "VIP Services"]
-    },
-    {
-      icon: Truck,
-      title: "Transportation",
-      description: "Convenient travel arrangements",
-      features: ["Shuttle Service", "Luxury Cars", "Group Transport"]
-    },
-    {
-      icon: Camera,
-      title: "Photography/Videography",
-      description: "Capture every precious moment",
-      features: ["Professional Photos", "Video Coverage", "Live Streaming"]
-    },
-    {
-      icon: Shield,
-      title: "Security Services",
-      description: "Safe and secure event environment",
-      features: ["Crowd Control", "VIP Protection", "Emergency Response"]
-    },
-    {
-      icon: Megaphone,
-      title: "Event Marketing",
-      description: "Promote your event effectively",
-      features: ["Digital Marketing", "Social Media", "Print Materials"]
-    }
-  ];
 
   return (
     <>
@@ -109,39 +52,44 @@ const Services = () => {
               </p>
             </div>
 
+            {/* Dynamic Services from DB */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-12">
-              {services.map((service, index) => {
-                const IconComponent = service.icon;
-                return (
-                  <Card
-                    key={index}
-                    className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 bg-white/80 backdrop-blur-sm border-0 shadow-lg"
-                  >
-                    <CardHeader className="text-center pb-4">
-                      <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                        <IconComponent className="text-white" size={28} />
-                      </div>
-                      <CardTitle className="text-xl font-bold text-gray-900 group-hover:text-purple-600 transition-colors">
-                        {service.title}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-center">
-                      <p className="text-gray-600 mb-4">{service.description}</p>
-                      <div className="flex flex-wrap gap-2 justify-center">
-                        {service.features.map((feature, idx) => (
-                          <Badge
-                            key={idx}
-                            variant="secondary"
-                            className="bg-purple-100 text-purple-700 hover:bg-purple-200"
-                          >
-                            {feature}
-                          </Badge>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+              {services.length > 0 ? (
+                services.map((service, index) => {
+                  const IconComponent = LucideIcons[service.icon] || LucideIcons.Building; 
+                  return (
+                    <Card
+                      key={index}
+                      className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 bg-white/80 backdrop-blur-sm border-0 shadow-lg"
+                    >
+                      <CardHeader className="text-center pb-4">
+                        <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                          <IconComponent className="text-white" size={28} />
+                        </div>
+                        <CardTitle className="text-xl font-bold text-gray-900 group-hover:text-purple-600 transition-colors">
+                          {service.title}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="text-center">
+                        <p className="text-gray-600 mb-4">{service.description}</p>
+                        <div className="flex flex-wrap gap-2 justify-center">
+                          {service.features.map((feature, idx) => (
+                            <Badge
+                              key={idx}
+                              variant="secondary"
+                              className="bg-purple-100 text-purple-700 hover:bg-purple-200"
+                            >
+                              {feature}
+                            </Badge>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              ) : (
+                <p className="text-center text-gray-600 col-span-full">No services available</p>
+              )}
             </div>
 
             <div className="text-center">

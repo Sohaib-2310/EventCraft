@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast, Toaster } from 'react-hot-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,8 @@ import emailjs from 'emailjs-com';
 const Deals = () => {
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState('');
+  const [packages, setPackages] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [bookingData, setBookingData] = useState({
     name: '',
     email: '',
@@ -23,60 +25,46 @@ const Deals = () => {
     specialRequests: ''
   });
 
-  const packages = [
-    {
-      id: 'basic',
-      name: 'Basic Package',
-      price: 299900,
-      icon: Zap,
-      color: 'from-green-500 to-emerald-500',
-      popular: false,
-      features: [
-        'Venue for up to 50 guests',
-        'Basic catering (buffet)',
-        'Simple decoration',
-        'Sound system',
-        '4-hour event duration',
-        'Basic photography (2 hours)'
-      ]
-    },
-    {
-      id: 'standard',
-      name: 'Standard Package',
-      price: 499900,
-      icon: Star,
-      color: 'from-blue-500 to-cyan-500',
-      popular: true,
-      features: [
-        'Venue for up to 100 guests',
-        'Premium buffet & cocktails',
-        'Enhanced decoration & lighting',
-        'Professional sound & DJ',
-        '6-hour event duration',
-        'Photography & videography (4 hours)',
-        'Guest management service'
-      ]
-    },
-    {
-      id: 'premium',
-      name: 'Premium Package',
-      price: 799900,
-      icon: Crown,
-      color: 'from-purple-500 to-pink-500',
-      popular: false,
-      features: [
-        'Venue for up to 200 guests',
-        'Gourmet plated dinner',
-        'Luxury decoration & florals',
-        'Live band & entertainment',
-        '8-hour event duration',
-        'Full-day photography & videography',
-        'Dedicated event coordinator',
-        'Transportation service',
-        'Security service'
-      ]
+  // Fetch packages from API
+  const fetchPackages = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/deals');
+      if (!response.ok) throw new Error('Failed to fetch packages');
+      const data = await response.json();
+      
+      // Transform API data to match the UI structure
+      const transformedPackages = data.map((pkg, index) => {
+        const icons = [Zap, Star, Crown];
+        const colors = [
+          'from-green-500 to-emerald-500',
+          'from-blue-500 to-cyan-500', 
+          'from-purple-500 to-pink-500'
+        ];
+        
+        return {
+          id: pkg._id,
+          name: pkg.name,
+          price: pkg.price,
+          icon: icons[index % icons.length],
+          color: colors[index % colors.length],
+          popular: index === 1, // Make second package popular
+          features: pkg.services || [],
+          description: pkg.description || ''
+        };
+      });
+      
+      setPackages(transformedPackages);
+    } catch (error) {
+      console.error('Error fetching packages:', error);
+      toast.error('Failed to load packages');
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
+
+  useEffect(() => {
+    fetchPackages();
+  }, []);
 
   const handleBookPackage = (packageId) => {
     setSelectedPackage(packageId);
@@ -84,10 +72,6 @@ const Deals = () => {
   };
 
   const submitBooking = async () => {
-    // const serviceID = 'service_dbk69bn';
-    // const templateID = 'template_mp3mw5n';
-    // const userID = 'dNiRqW19iEm3Wxm7k'; // public key from EmailJS
-
     const selectedPkg = packages.find(pkg => pkg.id === selectedPackage);
 
     const payload = {
@@ -103,9 +87,6 @@ const Deals = () => {
     };
 
     try {
-      // EmailJS
-      // await emailjs.send(serviceID, templateID, payload, userID);
-
       // Backend
       await fetch('http://localhost:5000/api/package-booking', {
         method: 'POST',
@@ -130,6 +111,23 @@ const Deals = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <section id="deals" className="py-20 px-6 bg-gradient-to-br from-slate-900 to-purple-900">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-5xl font-bold text-white mb-6">
+              Choose Your Perfect <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400">Package</span>
+            </h2>
+            <p className="text-xl text-blue-100 max-w-3xl mx-auto leading-relaxed">
+              Loading packages...
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section id="deals" className="py-20 px-6 bg-gradient-to-br from-slate-900 to-purple-900">
       <Toaster position="bottom-right" />
@@ -144,52 +142,63 @@ const Deals = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {packages.map((pkg) => {
-            const IconComponent = pkg.icon;
-            return (
-              <Card key={pkg.id} className={`relative overflow-hidden border-0 shadow-2xl transform hover:scale-105 transition-all duration-300 ${pkg.popular ? 'ring-4 ring-yellow-400' : ''}`}>
-                {pkg.popular && (
-                  <div className="absolute top-4 right-4 z-10">
-                    <Badge className="bg-gradient-to-r from-yellow-400 to-orange-400 text-black font-bold">
-                      MOST POPULAR
-                    </Badge>
-                  </div>
-                )}
+        {packages.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-white/60 text-lg">No packages available at the moment.</div>
+            <div className="text-white/40 text-sm mt-2">Please check back later or contact us for custom packages.</div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {packages.map((pkg) => {
+              const IconComponent = pkg.icon;
+              return (
+                <Card key={pkg.id} className={`relative overflow-hidden border-0 shadow-2xl transform hover:scale-105 transition-all duration-300 ${pkg.popular ? 'ring-4 ring-yellow-400' : ''}`}>
+                  {pkg.popular && (
+                    <div className="absolute top-4 right-4 z-10">
+                      <Badge className="bg-gradient-to-r from-yellow-400 to-orange-400 text-black font-bold">
+                        MOST POPULAR
+                      </Badge>
+                    </div>
+                  )}
 
-                <div className={`absolute inset-0 bg-gradient-to-br ${pkg.color} opacity-90`} />
+                  <div className={`absolute inset-0 bg-gradient-to-br ${pkg.color} opacity-90`} />
 
-                <CardHeader className="relative z-10 text-center text-white pt-8">
-                  <div className="w-20 h-20 mx-auto mb-4 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                    <IconComponent size={36} className="text-white" />
-                  </div>
-                  <CardTitle className="text-3xl font-bold mb-2">{pkg.name}</CardTitle>
-                  <div className="text-4xl font-bold mb-4">
-                    PKR {pkg.price.toLocaleString()}
-                  </div>
-                </CardHeader>
+                  <CardHeader className="relative z-10 text-center text-white pt-8">
+                    <div className="w-20 h-20 mx-auto mb-4 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                      <IconComponent size={36} className="text-white" />
+                    </div>
+                    <CardTitle className="text-3xl font-bold mb-2">{pkg.name}</CardTitle>
+                    <div className="text-4xl font-bold mb-4">
+                      PKR {pkg.price.toLocaleString()}
+                    </div>
+                  </CardHeader>
 
-                <CardContent className="relative z-10 text-white px-8 pb-8">
-                  <ul className="space-y-3 mb-8">
-                    {pkg.features.map((feature, idx) => (
-                      <li key={idx} className="flex items-center gap-3">
-                        <Check size={20} className="text-green-300 flex-shrink-0" />
-                        <span className="text-white/90">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <CardContent className="relative z-10 text-white px-8 pb-8">
+                    <ul className="space-y-3 mb-8">
+                      {pkg.features.length > 0 ? (
+                        pkg.features.map((feature, idx) => (
+                          <li key={idx} className="flex items-center gap-3">
+                            <Check size={20} className="text-green-300 flex-shrink-0" />
+                            <span className="text-white/90">{feature}</span>
+                          </li>
+                        ))
+                      ) : (
+                        <li className="text-white/60 italic">No features listed</li>
+                      )}
+                    </ul>
 
-                  <Button
-                    onClick={() => handleBookPackage(pkg.id)}
-                    className="w-full bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border border-white/30 py-3 text-lg font-semibold rounded-full transition-all duration-300"
-                  >
-                    Book This Package
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                    <Button
+                      onClick={() => handleBookPackage(pkg.id)}
+                      className="w-full bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border border-white/30 py-3 text-lg font-semibold rounded-full transition-all duration-300"
+                    >
+                      Book This Package
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
 
         <Dialog open={showBookingForm} onOpenChange={setShowBookingForm}>
           <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">

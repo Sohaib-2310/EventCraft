@@ -1,21 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, CheckCircle, XCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const Availability = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [bookedDates, setBookedDates] = useState([]);
+  const [availableDates, setAvailableDates] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Sample booked dates (For demo purposes)
-  const bookedDates = [
-    new Date(2024, 6, 15),
-    new Date(2024, 6, 22),
-    new Date(2024, 6, 29),
-    new Date(2024, 7, 5),
-    new Date(2024, 7, 12),
-    new Date(2024, 7, 19),
-    new Date(2024, 7, 26),
-  ];
+  // Fetch availability data from API
+  const fetchAvailability = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/availability');
+      if (!response.ok) throw new Error('Failed to fetch availability');
+      const data = await response.json();
+      
+      // Convert date strings to Date objects
+      const formatDates = (dates) => {
+        return dates.map(date => new Date(date));
+      };
+      
+      setBookedDates(formatDates(data.bookedDates));
+      setAvailableDates(formatDates(data.availableDates));
+    } catch (error) {
+      console.error('Error fetching availability:', error);
+      toast.error('Failed to load availability data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAvailability();
+  }, []);
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -27,6 +46,14 @@ const Availability = () => {
       bookedDate.getDate() === date.getDate() &&
       bookedDate.getMonth() === date.getMonth() &&
       bookedDate.getFullYear() === date.getFullYear()
+    );
+  };
+
+  const isDateAvailable = (date) => {
+    return availableDates.some(availableDate =>
+      availableDate.getDate() === date.getDate() &&
+      availableDate.getMonth() === date.getMonth() &&
+      availableDate.getFullYear() === date.getFullYear()
     );
   };
 
@@ -48,6 +75,7 @@ const Availability = () => {
     for (let i = 0; i < 42; i++) {
       const isCurrentMonth = currentDate.getMonth() === selectedMonth;
       const isBooked = isDateBooked(currentDate);
+      const isAvailable = isDateAvailable(currentDate);
       const isPast = isDatePast(currentDate);
       const isToday = currentDate.toDateString() === new Date().toDateString();
 
@@ -56,9 +84,10 @@ const Availability = () => {
         day: currentDate.getDate(),
         isCurrentMonth,
         isBooked,
+        isAvailable,
         isPast,
         isToday,
-        isAvailable: isCurrentMonth && !isBooked && !isPast,
+        isAvailableForBooking: isCurrentMonth && !isBooked && !isPast,
       });
 
       currentDate.setDate(currentDate.getDate() + 1);
@@ -68,6 +97,23 @@ const Availability = () => {
   };
 
   const calendarDays = generateCalendarDays();
+
+  if (isLoading) {
+    return (
+      <section id="availability" className="py-20 px-6 bg-gradient-to-br from-blue-50 to-purple-50">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-5xl font-bold text-gray-900 mb-6">
+              Check <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">Availability</span>
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+              Loading availability data...
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="availability" className="py-20 px-6 bg-gradient-to-br from-blue-50 to-purple-50">
@@ -143,6 +189,7 @@ const Availability = () => {
                     ${dayInfo.isAvailable ? 'bg-green-100 text-green-800 hover:bg-green-200' : ''}
                     ${dayInfo.isBooked ? 'bg-red-100 text-red-800' : ''}
                     ${dayInfo.isPast && dayInfo.isCurrentMonth ? 'bg-gray-100 text-gray-500' : ''}
+                    ${dayInfo.isAvailableForBooking && !dayInfo.isAvailable && !dayInfo.isBooked ? 'bg-blue-50 text-blue-800 hover:bg-blue-100' : ''}
                   `}
                 >
                   {dayInfo.day}

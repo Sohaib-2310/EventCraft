@@ -1,167 +1,206 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import DealModal from './DealModal';
+import ConfirmDialog from './ConfirmDialog';
 import toast from 'react-hot-toast';
 
 const DealsUpdateSection = () => {
-  const initialDeals = [
-    { 
-      id: 1, 
-      name: "Basic Package", 
-      price: 299900, 
-      services: [
-        "Venue for up to 50 guests",
-        "Basic catering (buffet)",
-        "Simple decoration",
-        "Sound system",
-        "4-hour event duration",
-        "Basic photography (2 hours)"
-      ] 
-    },
-    { 
-      id: 2, 
-      name: "Standard Package", 
-      price: 499900, 
-      services: [
-        "Venue for up to 100 guests",
-        "Premium buffet & cocktails",
-        "Enhanced decoration & lighting",
-        "Professional sound & DJ",
-        "6-hour event duration",
-        "Photography & videography (4 hours)",
-        "Guest management service"
-      ] 
-    },
-    { 
-      id: 3, 
-      name: "Premium Package", 
-      price: 799900, 
-      services: [
-        "Venue for up to 200 guests",
-        "Gourmet plated dinner",
-        "Luxury decoration & florals",
-        "Live band & entertainment",
-        "8-hour event duration",
-        "Full-day photography & videography",
-        "Dedicated event coordinator",
-        "Transportation service",
-        "Security service"
-      ] 
-    }
-  ];
-
-  const [deals, setDeals] = useState(initialDeals);
+  const [deals, setDeals] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDeal, setEditingDeal] = useState(null);
-  const [editedDeal, setEditedDeal] = useState(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [dealToDelete, setDealToDelete] = useState(null);
+
+  // Fetch deals from API
+  const fetchDeals = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/deals');
+      if (!response.ok) throw new Error('Failed to fetch deals');
+      const data = await response.json();
+      setDeals(data);
+    } catch (error) {
+      console.error('Error fetching deals:', error);
+      toast.error('Failed to load deals');
+    }
+  };
+
+  useEffect(() => {
+    fetchDeals();
+  }, []);
+
+  const handleAddDeal = () => {
+    setEditingDeal(null);
+    setIsModalOpen(true);
+  };
 
   const handleEditDeal = (deal) => {
-    setEditingDeal(deal.id);
-    setEditedDeal({ ...deal });
+    setEditingDeal(deal);
+    setIsModalOpen(true);
   };
 
-  const handleUpdateDeal = (dealId) => {
-    if (!editedDeal) return;
-    
-    setDeals(deals.map(deal => 
-      deal.id === dealId ? editedDeal : deal
-    ));
+  const handleSaveDeal = async (dealData) => {
+    try {
+      if (editingDeal) {
+        // Update existing deal
+        const response = await fetch(`http://localhost:5000/api/deals/${editingDeal._id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dealData)
+        });
+
+        if (!response.ok) throw new Error('Failed to update deal');
+        toast.success("Deal package has been successfully updated.");
+      } else {
+        // Create new deal
+        const response = await fetch('http://localhost:5000/api/deals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dealData)
+        });
+
+        if (!response.ok) throw new Error('Failed to create deal');
+        toast.success("New deal package has been added successfully.");
+      }
+      
+      fetchDeals();
+    } catch (error) {
+      console.error('Error saving deal:', error);
+      toast.error(error.message);
+    }
+  };
+
+  const handleDeleteClick = (deal) => {
+    setDealToDelete(deal);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/deals/${dealToDelete._id}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) throw new Error('Failed to delete deal');
+      
+      toast.success("Deal package has been removed successfully.");
+      fetchDeals();
+      setIsDeleteDialogOpen(false);
+      setDealToDelete(null);
+    } catch (error) {
+      console.error('Error deleting deal:', error);
+      toast.error('Failed to delete deal');
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
     setEditingDeal(null);
-    setEditedDeal(null);
-    toast.success("Deal package has been successfully updated.");
-  };
-
-  const handleCancelEdit = () => {
-    setEditingDeal(null);
-    setEditedDeal(null);
-  };
-
-  const updateEditedDeal = (field, value) => {
-    if (!editedDeal) return;
-    setEditedDeal({ ...editedDeal, [field]: value });
-  };
-
-  const addNewDeal = () => {
-    const newId = Math.max(...deals.map(d => d.id)) + 1;
-    const newDeal = {
-      id: newId,
-      name: "New Package",
-      price: 500,
-      services: ["Basic Service"]
-    };
-    setDeals([...deals, newDeal]);
-    toast.success("New deal package has been added successfully.");
-  };
-
-  const removeDeal = (dealId) => {
-    setDeals(deals.filter(deal => deal.id !== dealId));
-    toast.success("Deal package has been removed successfully.");
   };
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold mb-4">Deals & Packages Management</h2>
-      {deals.map((deal) => {
-        const isEditing = editingDeal === deal.id;
-        const currentDeal = isEditing ? editedDeal : deal;
-        
-        return (
-          <Card key={deal.id} className="p-4">
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Package Name</Label>
-                  <Input 
-                    value={currentDeal.name}
-                    onChange={(e) => updateEditedDeal('name', e.target.value)}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div>
-                  <Label>Price (PKR)</Label>
-                  <Input 
-                    type="number" 
-                    value={currentDeal.price}
-                    onChange={(e) => updateEditedDeal('price', Number(e.target.value))}
-                    disabled={!isEditing}
-                  />
-                </div>
-              </div>
-              <div>
-                <Label>Included Services</Label>
-                <div className="flex flex-wrap gap-2 mt-2 mb-2">
-                  {currentDeal.services.map((service, idx) => (
-                    <Badge key={idx} variant="outline">{service}</Badge>
-                  ))}
-                </div>
-                {isEditing && (
-                  <Input 
-                    placeholder="Enter services separated by commas"
-                    value={currentDeal.services.join(', ')}
-                    onChange={(e) => updateEditedDeal('services', e.target.value.split(',').map(s => s.trim()))}
-                  />
-                )}
-              </div>
-              <div className="flex gap-2">
-                {isEditing ? (
-                  <>
-                    <Button onClick={() => handleUpdateDeal(deal.id)}>Save Changes</Button>
-                    <Button variant="outline" onClick={handleCancelEdit}>Cancel</Button>
-                  </>
-                ) : (
-                  <>
-                    <Button onClick={() => handleEditDeal(deal)}>Edit Package</Button>
-                    <Button variant="destructive" onClick={() => removeDeal(deal.id)}>Remove Package</Button>
-                  </>
-                )}
-              </div>
-            </div>
-          </Card>
-        );
-      })}
-      <Button onClick={addNewDeal}>Add New Package</Button>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Deals & Packages Management</h2>
+        <Button onClick={handleAddDeal}>Add New Package</Button>
+      </div>
+
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Package Name</TableHead>
+              <TableHead>Price (PKR)</TableHead>
+              <TableHead>Services</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {deals.map((deal) => (
+              <TableRow key={deal._id}>
+                <TableCell>
+                  <div className="font-medium">{deal.name}</div>
+                  {deal.description && (
+                    <div className="text-sm text-gray-500 mt-1">{deal.description}</div>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <div className="font-semibold">PKR {deal.price.toLocaleString()}</div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1 max-w-xs">
+                    {deal.services.slice(0, 3).map((service, idx) => (
+                      <Badge key={idx} variant="outline" className="text-xs">
+                        {service}
+                      </Badge>
+                    ))}
+                    {deal.services.length > 3 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{deal.services.length - 3} more
+                      </Badge>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={deal.isActive ? "default" : "secondary"}>
+                    {deal.isActive ? "Active" : "Inactive"}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEditDeal(deal)}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleDeleteClick(deal)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+            {deals.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  No deals found. Add your first deal package to get started.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </Card>
+
+      {/* Deal Modal */}
+      <DealModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        deal={editingDeal}
+        onSave={handleSaveDeal}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => {
+          setIsDeleteDialogOpen(false);
+          setDealToDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Delete Deal Package"
+        description={`Are you sure you want to delete "${dealToDelete?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </div>
   );
 };

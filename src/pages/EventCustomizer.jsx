@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 import emailjs from 'emailjs-com';
 
 const EventCustomizer = ({ onBack }) => {
+    const [serviceCategories, setServiceCategories] = useState({});
     const [selectedServices, setSelectedServices] = useState({});
     const [selectedDate, setSelectedDate] = useState();
     const [guestCount, setGuestCount] = useState(50);
@@ -30,53 +31,28 @@ const EventCustomizer = ({ onBack }) => {
         specialRequests: ''
     });
 
-    const serviceCategories = {
-        venue: {
-            name: "Venue Management",
-            options: [
-                { name: "Banquet Hall", price: 150000, margin: 5000 },
-                { name: "Garden Venue", price: 100000, margin: 3000 },
-                { name: "Conference Room", price: 80000, margin: 0 },
-                { name: "Outdoor Pavilion", price: 120000, margin: 4000 }
-            ]
-        },
-        catering: {
-            name: "Catering Services",
-            options: [
-                { name: "Premium Buffet", price: 1500, perPerson: true, margin: 200 },
-                { name: "Plated Dinner", price: 2500, perPerson: true, margin: 300 },
-                { name: "Cocktail Service", price: 1000, perPerson: true, margin: 0 },
-                { name: "BBQ Package", price: 1200, perPerson: true, margin: 150 }
-            ]
-        },
-        decoration: {
-            name: "Decoration & Theming",
-            options: [
-                { name: "Elegant Florals", price: 60000, margin: 2000 },
-                { name: "LED Lighting", price: 45000, margin: 1500 },
-                { name: "Backdrop Design", price: 30000, margin: 0 },
-                { name: "Table Centerpieces", price: 25000, margin: 1000 }
-            ]
-        },
-        audiovisual: {
-            name: "Audio/Visual Support",
-            options: [
-                { name: "Sound System", price: 35000, margin: 1500 },
-                { name: "LED Screen", price: 60000, margin: 2500 },
-                { name: "Microphones", price: 10000, margin: 0 },
-                { name: "Live Streaming", price: 45000, margin: 2000 }
-            ]
-        },
-        entertainment: {
-            name: "Entertainment",
-            options: [
-                { name: "Live Band", price: 80000, margin: 3000 },
-                { name: "DJ Service", price: 40000, margin: 1500 },
-                { name: "Stand-up Comedy", price: 50000, margin: 2000 },
-                { name: "Magic Show", price: 30000, margin: 0 }
-            ]
-        }
-    };
+    // Fetch categories from backend
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await fetch('http://localhost:5000/api/service-categories');
+                if (!response.ok) throw new Error('Failed to fetch categories');
+                const data = await response.json();
+
+                // Convert array to object for easier handling
+                const categoriesObj = {};
+                data.forEach(cat => {
+                    categoriesObj[cat._id] = { name: cat.name, options: cat.options };
+                });
+                setServiceCategories(categoriesObj);
+            } catch (error) {
+                console.error('Error fetching categories:', error);
+                toast.error('Failed to load service categories.');
+            }
+        };
+
+        fetchCategories();
+    }, []);
 
     const blockedDates = [
         new Date(2024, 6, 15),
@@ -100,19 +76,19 @@ const EventCustomizer = ({ onBack }) => {
         setHasNegotiated(false);
     }, [selectedServices, guestCount]);
 
-    const handleServiceToggle = (category, service) => {
+    const handleServiceToggle = (categoryId, service) => {
         setSelectedServices(prev => {
-            const categoryServices = prev[category] || [];
+            const categoryServices = prev[categoryId] || [];
             const isSelected = categoryServices.some(s => s.name === service.name);
             if (isSelected) {
                 return {
                     ...prev,
-                    [category]: categoryServices.filter(s => s.name !== service.name)
+                    [categoryId]: categoryServices.filter(s => s.name !== service.name)
                 };
             } else {
                 return {
                     ...prev,
-                    [category]: [...categoryServices, service]
+                    [categoryId]: [...categoryServices, service]
                 };
             }
         });
@@ -224,8 +200,6 @@ const EventCustomizer = ({ onBack }) => {
         }
     };
 
-
-
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-8 px-6">
             <Toaster position="bottom-right" />
@@ -247,8 +221,8 @@ const EventCustomizer = ({ onBack }) => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Services Selection */}
                     <div className="lg:col-span-2 space-y-6">
-                        {Object.entries(serviceCategories).map(([categoryKey, category]) => (
-                            <Card key={categoryKey} className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+                        {Object.entries(serviceCategories).map(([categoryId, category]) => (
+                            <Card key={categoryId} className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
                                 <CardHeader>
                                     <CardTitle className="text-2xl text-gray-900">{category.name}</CardTitle>
                                 </CardHeader>
@@ -256,7 +230,7 @@ const EventCustomizer = ({ onBack }) => {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {category.options.map((service, idx) => {
                                             const isSelected =
-                                                selectedServices[categoryKey]?.some((s) => s.name === service.name);
+                                                selectedServices[categoryId]?.some((s) => s.name === service.name);
                                             return (
                                                 <div
                                                     key={idx}
@@ -264,7 +238,7 @@ const EventCustomizer = ({ onBack }) => {
                                                         ? "border-purple-500 bg-purple-50"
                                                         : "border-gray-200 hover:border-purple-300 hover:bg-purple-25"
                                                         }`}
-                                                    onClick={() => handleServiceToggle(categoryKey, service)}
+                                                    onClick={() => handleServiceToggle(categoryId, service)}
                                                 >
                                                     <div className="flex items-center justify-between mb-2">
                                                         <Checkbox checked={isSelected} className="pointer-events-none" />
@@ -467,8 +441,7 @@ const EventCustomizer = ({ onBack }) => {
                                     id="requests"
                                     value={bookingData.specialRequests}
                                     onChange={(e) =>
-                                        setBookingData({ ...bookingData, specialRequests: e.target.value })
-                                    }
+                                        setBookingData({ ...bookingData, specialRequests: e.target.value })}
                                     placeholder="Any special requirements or requests..."
                                 />
                             </div>
