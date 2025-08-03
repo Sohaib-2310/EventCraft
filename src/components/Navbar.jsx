@@ -91,7 +91,14 @@ const Navbar = () => {
                   {userRole === 'admin' && (
                     <Link to="/admin-dashboard">
                       <Button variant="outline" size="sm" className="mr-2">
-                        Dashboard
+                        Admin Dashboard
+                      </Button>
+                    </Link>
+                  )}
+                  {userRole === 'user' && (
+                    <Link to="/dashboard">
+                      <Button variant="outline" size="sm" className="mr-2">
+                        My Bookings
                       </Button>
                     </Link>
                   )}
@@ -142,7 +149,14 @@ const Navbar = () => {
                     {userRole === 'admin' && (
                       <Link to="/admin-dashboard" onClick={() => setIsMenuOpen(false)}>
                         <Button variant="outline" size="sm" className="w-full mb-2">
-                          Dashboard
+                          Admin Dashboard
+                        </Button>
+                      </Link>
+                    )}
+                    {userRole === 'user' && (
+                      <Link to="/dashboard" onClick={() => setIsMenuOpen(false)}>
+                        <Button variant="outline" size="sm" className="w-full mb-2">
+                          My Bookings
                         </Button>
                       </Link>
                     )}

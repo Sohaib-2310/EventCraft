@@ -153,11 +153,19 @@ const EventCustomizer = ({ onBack }) => {
         };
 
         try {
+            // Get token from localStorage
+            const token = localStorage.getItem('token');
+            if (!token) {
+                toast.error('Please login to book a customized event');
+                return;
+            }
+
             // Send to backend
-            const response = await fetch('http://localhost:5000/api/booking', {
+            const response = await fetch('http://localhost:5000/api/customized-bookings', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(bookingPayload),
             });

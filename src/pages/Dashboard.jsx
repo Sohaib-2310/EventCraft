@@ -5,6 +5,7 @@ import ServicesUpdateSection from '@/components/dashboard/ServicesUpdateSection'
 import EventCustomizationSection from '@/components/dashboard/EventCustomizationSection';
 import DealsUpdateSection from '@/components/dashboard/DealsUpdateSection';
 import AvailabilityUpdateSection from '@/components/dashboard/AvailabilityUpdateSection';
+import BookingsManagementSection from '@/components/dashboard/BookingsManagementSection';
 
 const Dashboard = () => {
   const [activeSection, setActiveSection] = useState('services');
@@ -25,6 +26,8 @@ const Dashboard = () => {
         return <DealsUpdateSection />;
       case 'availability':
         return <AvailabilityUpdateSection />;
+      case 'bookings':
+        return <BookingsManagementSection />;
       default:
         return <ServicesUpdateSection />;
     }

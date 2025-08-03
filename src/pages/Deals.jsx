@@ -87,10 +87,20 @@ const Deals = () => {
     };
 
     try {
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Please login to book a package');
+        return;
+      }
+
       // Backend
-      await fetch('http://localhost:5000/api/package-booking', {
+      await fetch('http://localhost:5000/api/package-bookings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(payload)
       });
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Settings, Wrench, Package, Calendar, Home, Menu, X } from 'lucide-react';
+import { Settings, Wrench, Package, Calendar, Home, Menu, X, BookOpen } from 'lucide-react';
 
 const DashboardSidebar = ({
     activeSection,
@@ -13,7 +13,8 @@ const DashboardSidebar = ({
         { id: 'services', label: 'Services Update', icon: Settings },
         { id: 'customization', label: 'Event Customization', icon: Wrench },
         { id: 'deals', label: 'Deals Update', icon: Package },
-        { id: 'availability', label: 'Availability Update', icon: Calendar }
+        { id: 'availability', label: 'Availability Update', icon: Calendar },
+        { id: 'bookings', label: 'Bookings Management', icon: BookOpen }
     ];
 
     return (
